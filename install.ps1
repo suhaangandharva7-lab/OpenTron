@@ -1,6 +1,6 @@
 # install.ps1 - OpenTron Installer 🚥
 
-$RepoUrl = "https://github.com/opentron/agent.git"
+$RepoUrl = "https://github.com/suhaangandharva-7/OpenTron.git"
 $TargetDir = "opentron-agent"
 
 Write-Host "🚥 OpenTron Installation Sequence Initiated..." -ForegroundColor Cyan
