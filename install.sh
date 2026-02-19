@@ -16,7 +16,7 @@ if ! command -v git &> /dev/null; then
 fi
 
 # 2. Clone Repository
-REPO_URL="https://github.com/suhaangandharva-7/OpenTron.git"
+REPO_URL="https://github.com/suhaangandharva-7-lab/OpenTron.git"
 TARGET_DIR="opentron-agent"
 
 if [ ! -d "$TARGET_DIR" ]; then
