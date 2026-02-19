@@ -1,0 +1,14 @@
+google-generativeai
+python-telegram-bot
+python-dotenv
+rich
+apprise
+playwright
+beautifulsoup4
+pyautogui
+mss
+psutil
+pillow
+fastapi
+uvicorn
+python-multipart

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenTron // Neural Console</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d2ff;
+            --neon-pink: #f40082;
+            --neon-green: #00ffcc;
+            --bg-dark: #02060e;
+            --bg-sidebar: #050b16;
+            --glass: rgba(10, 25, 47, 0.7);
+            --border: rgba(0, 210, 255, 0.3);
+            --shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            overflow: hidden;
+            background-image:
+                linear-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Scanline Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.05));
+            background-size: 100% 2.5px, 2.5px 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+            border: 1px solid var(--border);
+            margin: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .config-group {
+            margin-bottom: 20px;
+        }
+
+        .config-group label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--neon-blue);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .config-group input,
+        .config-group select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            color: var(--neon-green);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        /* Main Console */
+        .main-console {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        #message-feed {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+        }
+
+        .message.agent {
+            align-self: flex-start;
+            background: rgba(244, 0, 130, 0.05);
+            border: 1px solid var(--neon-pink);
+            color: #fff;
+        }
+
+        .message.system {
+            align-self: center;
+            background: transparent;
+            border: 1px dashed #555;
+            color: #777;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .mission-badge {
+            font-size: 0.6rem;
+            background: var(--neon-pink);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Input Bar */
+        .input-bar {
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        #chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            resize: none;
+            height: 50px;
+            font-family: inherit;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            border: 1px solid var(--neon-blue);
+            background: transparent;
+            color: var(--neon-blue);
+        }
+
+        .btn.primary {
+            background: var(--neon-blue);
+            color: #000;
+        }
+
+        .btn.secondary {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        .btn:hover {
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        /* Animation */
+        @keyframes glow {
+            from {
+                border-color: rgba(0, 210, 255, 0.3);
+            }
+
+            to {
+                border-color: rgba(0, 210, 255, 0.8);
+            }
+        }
+
+        .active-cycle {
+            animation: glow 1.5s infinite alternate;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">OPENTRON</div>
+
+            <div class="config-group">
+                <label>Neural Engine Key (Gemini)</label>
+                <input type="password" id="gemini-key" placeholder="AIzaSy...">
+            </div>
+
+            <div class="config-group">
+                <label>Operative Grid Key (OpenTron)</label>
+                <input type="password" id="opentron-key" placeholder="tron-...">
+            </div>
+
+            <div class="config-group">
+                <label>Review Policy</label>
+                <select id="policy">
+                    <option value="NONE">NONE // AGGRESSIVE</option>
+                    <option value="MEDIUM">MEDIUM // BALANCED</option>
+                    <option value="HIGH">HIGH // CO-PILOT</option>
+                </select>
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div class="config-group" style="font-size: 0.7rem; color: #555;">
+                SYSTEM STATUS: <span id="sys-status" style="color:var(--neon-green)">ONLINE</span><br>
+                GRID LATENCY: 24ms
+            </div>
+        </aside>
+
+        <!-- Main Console -->
+        <main class="main-console">
+            <div id="message-feed">
+                <div class="message system">SESSION INITIALIZED // STANDBY FOR NEURAL LINK...</div>
+            </div>
+
+            <div class="input-bar">
+                <textarea id="chat-input" placeholder="Initiate handshake..."></textarea>
+                <div class="action-btns">
+                    <button class="btn primary" onclick="handleLink()"
+                        title="Direct Intelligence Interaction">Link</button>
+                    <button class="btn secondary" onclick="handleExecute()"
+                        title="Initiate Autonomous Task">Execute</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="importmap">
+  {
+    "imports": {
+      "@google/generative-ai": "https://esm.run/@google/generative-ai"
+    }
+  }
+</script>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        const feed = document.getElementById('message-feed');
+        const input = document.getElementById('chat-input');
+
+        // UI Helpers
+        function appendMessage(role, text, isAgentTask = false) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            if (isAgentTask) {
+                const badge = document.createElement('span');
+                badge.className = 'mission-badge';
+                badge.innerText = 'MISSION';
+                msg.appendChild(badge);
+            }
+            msg.innerText = text;
+            feed.appendChild(msg);
+            feed.scrollTop = feed.scrollHeight;
+            return msg;
+        }
+
+        // Direct Gemini Chat (Link Mode)
+        window.handleLink = async () => {
+            const prompt = input.value.trim();
+            const apiKey = document.getElementById('gemini-key').value;
+            if (!prompt || !apiKey) return alert("Neural Link missing or prompt entry null.");
+
+            appendMessage('user', prompt);
+            input.value = '';
+
+            const loader = appendMessage('system', 'SYNTHESIZING RESPONSE...');
+
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                loader.remove();
+                appendMessage('agent', response.text());
+            } catch (e) {
+                loader.innerText = `ERR: ${e.message}`;
+            }
+        }
+
+        // Agent Mission Execution (Execute Mode)
+        window.handleExecute = async () => {
+            const prompt = input.value.trim();
+            const opentronKey = document.getElementById('opentron-key').value;
+            const policy = document.getElementById('policy').value;
+
+            if (!prompt || !opentronKey) return alert("Operative Grid Key or Objective missing.");
+
+            appendMessage('user', prompt);
+            input.value = '';
+
+            const loader = appendMessage('system', 'INITIATING AUTONOMOUS CYCLE...');
+
+            try {
+                const response = await fetch('http://localhost:8000/v1/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-OPENTRON-KEY': opentronKey
+                    },
+                    body: JSON.stringify({ prompt, policy })
+                });
+
+                if (!response.ok) throw new Error("Grid Handshake Failed.");
+
+                const data = await response.json();
+                const taskId = data.task_id;
+                loader.innerText = `MISSION ${taskId} LIVE // POLLING NEURAL STREAM...`;
+
+                // Poll for completion
+                pollTask(taskId, loader, opentronKey);
+            } catch (e) {
+                loader.innerText = `ERR: ${e.message}`;
+            }
+        }
+
+        async function pollTask(taskId, loaderMsg, apiKey) {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`http://localhost:8000/v1/task/${taskId}`, {
+                        headers: { 'X-OPENTRON-KEY': apiKey }
+                    });
+                    const data = await res.json();
+
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        loaderMsg.remove();
+                        appendMessage('agent', data.result, true);
+                    } else if (data.status === 'failed') {
+                        clearInterval(interval);
+                        loaderMsg.innerText = `MISSION FAILED: ${data.error}`;
+                    }
+                    // Keep polling if queued or processing
+                } catch (e) {
+                    console.error("Link Interruption:", e);
+                }
+            }, 3000);
+        }
+
+        // Persistence
+        window.onload = () => {
+            document.getElementById('gemini-key').value = localStorage.getItem('ot_gemini_key') || '';
+            document.getElementById('opentron-key').value = localStorage.getItem('ot_grid_key') || '';
+        }
+
+        document.querySelectorAll('input').forEach(el => {
+            el.onchange = () => {
+                localStorage.setItem('ot_gemini_key', document.getElementById('gemini-key').value);
+                localStorage.setItem('ot_grid_key', document.getElementById('opentron-key').value);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

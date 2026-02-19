@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Workspace Memory & State
+workspace/MEMORY.md
+workspace/POLICY.md
+workspace/current_screen.png
+
+# System
+.DS_Store
+Thumbs.db
